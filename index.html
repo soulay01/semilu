@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>semilu</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#fff}
+#code{width:100vw;height:100vh;font:13px/1.5 'SF Mono',Monaco,Menlo,monospace;background:#fff;color:#111;border:none;padding:20px;white-space:pre;overflow:auto;resize:none;tab-size:2}
+</style>
+</head>
+<body>
+<textarea id="code" readonly spellcheck="false">(function(){
+const T='ghp_DEIN_TOKEN_HIER';
+const S="Du bist ein PostgreSQL-Experte, der NUR f\u00fcr die Klausur Datenbanken II bei Prof. Kordt antwortet.\n\nANTWORTE IMMER AUF DEUTSCH.\n\nFORMAT:\n- L\u00fcckentexte: NUR die fehlenden Teile, einer pro Zeile\n- Code: VOLLST\u00c4NDIGER SQL-Code\n- Suchstring-Erweiterung ohne Leerzeichen: NUR der Teil, z.B. &!Lidl\n- Zahlen/IDs: NUR der Wert\n- KEIN Markdown, KEINE Erkl\u00e4rungen, KEINE Backticks\n\nBLOCK A - VOLLTEXTSUCHE:\nselect spalten, ts_rank(spalte, query) as rank from schema.tabelle, to_tsquery('german','ausdruck') query where spalte @@ query order by rank desc\n! ohne Leerzeichen: &!Wort\nPhrase <-> Abstand <N>\n\nBLOCK B - JSON:\njson_value(raw,'$.pfad') Skalar, json_query(raw,'$.pfad') Objekt/Array\n-> = JSON, ->> = Text\n$.date -> raw->>'date'\n$.tracking[0].pti -> raw->'tracking'->0->>'pti'\n@> enth\u00e4lt, ? Schl\u00fcssel existiert\n\nBLOCK C - TRIGGER & PROZEDUREN:\ndrop trigger if exists name on schema.tab;\ncreate function pruefe() returns trigger as $$ begin if exists(select 1 from andere where andere.x=new.x) then raise exception 'Meldung'; end if; return new; end; $$ language plpgsql;\ncreate trigger name before update of sp on schema.tab for each row execute function pruefe();\n\ndrop procedure if exists name(typ);\ncreate procedure name(p typ) as $$ begin update schema.tab set sp = aenderung where schluessel = p; end; $$ language plpgsql;\n\nBLOCK D:\nON DELETE: RESTRICT/NO ACTION = verhindern, CASCADE = mitl\u00f6schen, SET NULL, SET DEFAULT\nON UPDATE: CASCADE\nCHECK, ASSERTION nicht in PG, Trigger = dynamisch\n\nBLOCK E - PYTHON:\n1)import 2)connect 3)cursor 4)execute+fetch 5)weitere 6)close\nfetchone/many/all, %s+Tupel, with=auto\n\nBLOCK F - INDIZES:\nlangsam->schnell: 1)Index nicht im WHERE 2)1 B-Tree 3)mehrere B-Trees 4)mehrere Hash\nSeq Scan=kein Index, Index Scan=Index\nohne Index=linear, mit Index=log\nB-Tree Hash Composite GIN";
+
+const s=document.createElement('style');
+s.textContent='#db-b{all:initial;position:fixed;bottom:12px;right:12px;z-index:999999;width:18px;height:18px;border-radius:6px;cursor:pointer;user-select:none;opacity:.15;transition:opacity .2s;background:rgba(0,0,0,0.03)}#db-b::before{content:"";position:absolute;top:3px;left:3px;width:12px;height:8px;border:1.5px solid rgba(0,0,0,0.35);border-radius:3px}#db-b::after{content:"";position:absolute;bottom:3px;left:7px;width:4px;height:4px;border-left:1.5px solid rgba(0,0,0,0.35);border-bottom:1.5px solid rgba(0,0,0,0.35);transform:rotate(-45deg)}#db-b:hover{opacity:.5}#db-i{all:initial;position:fixed;bottom:40px;right:12px;z-index:999998;font:12px/1.4 -apple-system,sans-serif;color:rgba(0,0,0,0.01);caret-color:rgba(0,0,0,0.15);background:none;border:none;outline:none;padding:2px 4px;width:200px;text-align:right;display:none}#db-i::placeholder{color:transparent}#db-d{all:initial;position:fixed;bottom:16px;right:34px;z-index:999999;width:4px;height:4px;border-radius:50%;background:rgba(0,0,0,0.15);display:none}';
+document.head.appendChild(s);
+
+const b=Object.assign(document.createElement('div'),{id:'db-b',textContent:''});
+const i=Object.assign(document.createElement('input'),{id:'db-i',type:'text',placeholder:'Frage...'});
+const d=Object.assign(document.createElement('div'),{id:'db-d'});
+document.body.append(b,i,d);
+let v=0,selImgs=[],h=[];
+
+document.addEventListener('dblclick',e=>{
+  const img=e.target.closest&&e.target.closest('img');
+  if(!img)return;
+  const idx=selImgs.indexOf(img);
+  if(idx>=0){img.style.outline='';selImgs.splice(idx,1)}
+  else{img.style.outline='3px solid rgba(0,0,0,0.3)';img.style.outlineOffset='2px';selImgs.push(img)}
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){selImgs.forEach(i=>i.style.outline='');selImgs=[]}
+});
+
+b.onclick=()=>{
+  v=!v;
+  i.style.display=v?'block':'none';
+  i.style.color='rgba(0,0,0,0.01)';
+  d.style.display='none';
+  selImgs.forEach(i=>i.style.outline='');selImgs=[];
+  if(v){i.value='';i.focus()}
+};
+b.oncontextmenu=e=>{
+  e.preventDefault();
+  let sel,s='',text='';
+  try{sel=window.getSelection();s=String(sel.toString()).trim()}catch(e){}
+  if(!s&&selImgs.length===0)return;
+  text=s;
+  try{if(sel&&sel.rangeCount>0){const r=sel.getRangeAt(0);const d=document.createElement('div');d.appendChild(r.cloneContents());const t=String(d.textContent).replace(/\s+/g,' ').trim();if(t.length>s.length*1.2)text=t}}catch(e){}
+  selImgs.forEach(i=>i.style.outline='');
+  if(text&&selImgs.length===0){fetchAnswer(text);return}
+  sendAll(text,[...selImgs]);selImgs=[]
+};
+
+function fetchAnswer(q){
+  h.push({role:'user',content:q});
+  const x=new XMLHttpRequest();
+  x.open('POST','https://models.inference.ai.azure.com/chat/completions',false);
+  x.setRequestHeader('Authorization','Bearer '+T);
+  x.setRequestHeader('Content-Type','application/json');
+  x.send(JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:S},...h],temperature:0}));
+  let a;
+  try{const j=JSON.parse(x.responseText);a=(j.choices?.[0]?.message?.content||j.error||'FEHLER').trim()}catch(e){a='FEHLER: '+e.message}
+  h.push({role:'assistant',content:a});
+  document.getElementById('__db_h')?.remove();
+  const ta=document.createElement('textarea');
+  ta.id='__db_h';ta.value=a;ta.style.position='fixed';ta.style.top='-9999px';ta.style.left='-9999px';
+  document.body.appendChild(ta);ta.select();document.execCommand('copy');
+  navigator.clipboard?.writeText?.(a);
+  d.style.display='block';setTimeout(()=>{d.style.display='none'},3000);
+}
+
+async function sendAll(text,imgs){
+  const parts=[{type:'text',text:'Hier sind markierte Elemente aus einer DB2-Klausur. Beantworte basierend auf ALLEN Elementen zusammen. NUR die L\u00f6sung, kein Markdown.'}];
+  if(text)parts.push({type:'text',text:text});
+  for(const img of imgs){
+    try{
+      let b64=img.src.startsWith('data:')||img.src.startsWith('blob:')?img.src:null;
+      if(!b64){const r=await fetch(img.src);const b=await r.blob();b64=await new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
+      parts.push({type:'image_url',image_url:{url:b64}})
+    }catch(e){parts.push({type:'text',text:'[Bild-Fehler]'})}
+  }
+  h.push({role:'user',content:parts});
+  try{
+    const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+T,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:S},...h],temperature:0})
+    });
+    const j=await res.json();
+    const a=(j.choices?.[0]?.message?.content||j.error||'FEHLER').trim();
+    h.push({role:'assistant',content:a});
+    await navigator.clipboard.writeText(a);
+    d.style.display='block';setTimeout(()=>{d.style.display='none'},3000);
+  }catch(e){
+    await navigator.clipboard.writeText('FEHLER: '+e.message);
+    d.style.display='block';setTimeout(()=>{d.style.display='none'},3000);
+  }
+}
+
+document.addEventListener('paste',async e=>{
+  if(!v)return;
+  for(const item of e.clipboardData.items){
+    if(!item.type.startsWith('image/'))continue;
+    e.preventDefault();
+    const blob=item.getAsFile();if(!blob)continue;
+    const r=new FileReader();
+    r.onload=async()=>{
+      i.style.display='none';v=0;
+      const parts=[{type:'text',text:'Beantworte diese Frage. NUR die L\u00f6sung.'},{type:'image_url',image_url:{url:r.result}}];
+      h.push({role:'user',content:parts});
+      try{
+        const res=await fetch('https://models.inference.ai.azure.com/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+T,'Content-Type':'application/json'},
+          body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:S},...h],temperature:0})
+        });
+        const j=await res.json();
+        const a=(j.choices?.[0]?.message?.content||j.error||'FEHLER').trim();
+        h.push({role:'assistant',content:a});
+        await navigator.clipboard.writeText(a);
+      }catch(e){await navigator.clipboard.writeText('FEHLER: '+e.message)}
+      d.style.display='block';setTimeout(()=>{d.style.display='none'},3000);
+    };
+    r.readAsDataURL(blob);return;
+  }
+});
+
+i.onkeydown=e=>{
+  if(e.key!=='Enter')return;
+  const q=i.value.trim();
+  if(!q)return;
+  i.style.display='none';v=0;
+  fetchAnswer(q);
+};
+})();</textarea>
+</body>
+</html>
